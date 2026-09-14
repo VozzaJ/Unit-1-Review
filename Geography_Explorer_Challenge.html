@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Geography Explorer Challenge</title>
+<style>
+  :root{
+    --parchment:#F1E8D0;
+    --parchment-deep:#E4D6AE;
+    --paper-line:#D8C89C;
+    --ink:#2B2B23;
+    --ink-soft:#5C5648;
+    --teal:#1F6F6B;
+    --teal-dark:#123F3D;
+    --clay:#C1622D;
+    --clay-dark:#8C4419;
+    --gold:#B8901F;
+    --navy:#33506B;
+    --navy-dark:#213748;
+    --card:#FBF7EC;
+    --good:#3C7A4E;
+    --bad:#A6402E;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.028) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.028) 0 1px, transparent 1px 34px),
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.5), transparent 55%),
+      var(--parchment);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px 16px;
+  }
+  .display{
+    font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;
+  }
+  .stage{
+    width:100%;
+    max-width:880px;
+  }
+
+  /* ---------- decorative compass watermark ---------- */
+  .watermark{
+    position:fixed;
+    width:520px;height:520px;
+    opacity:0.06;
+    pointer-events:none;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+  }
+
+  /* ---------- shared card ---------- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    box-shadow:0 1px 0 rgba(0,0,0,0.03), 0 12px 30px -18px rgba(43,43,35,0.35);
+  }
+
+  /* ---------- setup screen ---------- */
+  .setup{
+    padding:44px 40px 36px;
+    text-align:center;
+  }
+  .eyebrow-compass{
+    width:46px;height:46px;
+    margin:0 auto 14px;
+    opacity:0.85;
+  }
+  .setup h1{
+    font-size:2.35rem;
+    margin:0 0 6px;
+    letter-spacing:0.2px;
+  }
+  .setup p.sub{
+    color:var(--ink-soft);
+    margin:0 0 30px;
+    font-size:1.02rem;
+  }
+  .mode-toggle{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:26px;
+    flex-wrap:wrap;
+  }
+  .mode-btn{
+    border:1.5px solid var(--paper-line);
+    background:#fff;
+    color:var(--ink-soft);
+    padding:11px 18px;
+    border-radius:999px;
+    font-size:0.92rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .mode-btn:hover{ border-color:var(--teal); }
+  .mode-btn.active{
+    background:var(--teal);
+    border-color:var(--teal);
+    color:#fff;
+  }
+  .team-panel{
+    max-width:440px;
+    margin:0 auto 22px;
+    text-align:left;
+  }
+  .team-panel h3{
+    font-size:0.82rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+    font-weight:700;
+  }
+  .team-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .team-row input{
+    flex:1;
+    padding:10px 12px;
+    border-radius:5px;
+    border:1.5px solid var(--paper-line);
+    font-size:0.95rem;
+    background:#fff;
+    color:var(--ink);
+  }
+  .team-row input:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+  .team-row .swatch{
+    width:38px;height:38px;
+    border-radius:5px;
+    flex:0 0 auto;
+  }
+  .team-row button{
+    flex:0 0 auto;
+    border:none;
+    background:transparent;
+    color:var(--bad);
+    font-size:1.1rem;
+    cursor:pointer;
+    padding:0 6px;
+  }
+  .add-team{
+    width:100%;
+    padding:9px;
+    border:1.5px dashed var(--paper-line);
+    border-radius:5px;
+    background:transparent;
+    color:var(--teal-dark);
+    font-weight:600;
+    cursor:pointer;
+    font-size:0.9rem;
+  }
+  .add-team:hover{ border-color:var(--teal); }
+  .add-team:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .options-row{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+    max-width:440px;
+    margin:0 auto 28px;
+    text-align:left;
+  }
+  .option-check{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:0.88rem;
+    color:var(--ink-soft);
+  }
+
+  .start-btn{
+    background:var(--clay);
+    color:#fff;
+    border:none;
+    padding:15px 36px;
+    font-size:1.05rem;
+    font-weight:700;
+    border-radius:7px;
+    cursor:pointer;
+    box-shadow:0 6px 0 var(--clay-dark);
+    transition:transform .08s ease;
+  }
+  .start-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--clay-dark); }
+  .start-btn:hover{ filter:brightness(1.04); }
+
+  /* ---------- play screen ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .progress-wrap{
+    flex:1;
+    min-width:160px;
+  }
+  .progress-label{
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    font-weight:600;
+  }
+  .progress-track{
+    height:8px;
+    border-radius:99px;
+    background:var(--parchment-deep);
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--teal);
+    border-radius:99px;
+    transition:width .35s ease;
+  }
+  .scoreboard{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .score-chip{
+    background:#fff;
+    border:1.5px solid var(--paper-line);
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:0.82rem;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .score-chip .dot{ width:9px;height:9px;border-radius:50%; }
+
+  .qcard{
+    padding:30px 32px 26px;
+  }
+  .qmeta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .topic-tag{
+    font-size:0.74rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--teal-dark);
+    background:rgba(31,111,107,0.1);
+    padding:4px 10px;
+    border-radius:999px;
+  }
+  .timer-ring{
+    width:44px;height:44px;
+    position:relative;
+    flex:0 0 auto;
+  }
+  .timer-ring svg{ transform:rotate(-90deg); }
+  .timer-ring .num{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.85rem;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .qtext{
+    font-size:1.28rem;
+    line-height:1.4;
+    margin:0 0 18px;
+    font-weight:600;
+  }
+  .qimage{
+    display:flex;
+    justify-content:center;
+    margin-bottom:18px;
+  }
+  .qimage svg{
+    width:220px;
+    height:auto;
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    padding:8px;
+  }
+
+  .answers{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .answer{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 16px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    font-size:1rem;
+    font-weight:600;
+    text-align:left;
+    color:#fff;
+    transition:transform .08s ease, filter .12s ease;
+    position:relative;
+  }
+  .answer:hover:not(:disabled){ filter:brightness(1.06); }
+  .answer:active:not(:disabled){ transform:scale(0.98); }
+  .answer:disabled{ cursor:default; }
+  .answer .badge{
+    width:30px;height:30px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.28);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.8rem;
+    font-weight:800;
+    flex:0 0 auto;
+  }
+  .a-n{ background:var(--clay); }
+  .a-e{ background:var(--teal); }
+  .a-s{ background:var(--gold); }
+  .a-w{ background:var(--navy); }
+
+  .answer.correct{ outline:3px solid var(--good); box-shadow:0 0 0 4px rgba(60,122,78,0.25); }
+  .answer.incorrect{ outline:3px solid var(--bad); opacity:0.55; }
+  .answer.dim{ opacity:0.45; }
+
+  .feedback{
+    margin-top:16px;
+    padding:14px 16px;
+    border-radius:7px;
+    font-size:0.95rem;
+    line-height:1.45;
+    display:none;
+  }
+  .feedback.show{ display:block; }
+  .feedback.good{ background:rgba(60,122,78,0.12); color:var(--teal-dark); border:1px solid rgba(60,122,78,0.3); }
+  .feedback.neutral{ background:rgba(31,111,107,0.08); color:var(--ink); border:1px solid var(--paper-line); }
+  .feedback b{ color:var(--good); }
+
+  .controls-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:18px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .ghost-btn{
+    background:transparent;
+    border:1.5px solid var(--paper-line);
+    color:var(--ink-soft);
+    padding:9px 16px;
+    border-radius:6px;
+    font-weight:600;
+    font-size:0.88rem;
+    cursor:pointer;
+  }
+  .ghost-btn:hover{ border-color:var(--teal); color:var(--teal-dark); }
+  .primary-btn{
+    background:var(--teal);
+    color:#fff;
+    border:none;
+    padding:10px 22px;
+    border-radius:6px;
+    font-weight:700;
+    font-size:0.92rem;
+    cursor:pointer;
+    box-shadow:0 4px 0 var(--teal-dark);
+  }
+  .primary-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--teal-dark); }
+  .primary-btn:disabled{ opacity:0.4; cursor:not-allowed; box-shadow:none; }
+
+  .award-panel{
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px dashed var(--paper-line);
+    display:none;
+  }
+  .award-panel.show{ display:block; }
+  .award-panel h4{
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .award-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .award-btn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1.5px solid var(--paper-line);
+    border-radius:999px;
+    padding:8px 14px;
+    font-weight:700;
+    font-size:0.86rem;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .award-btn:hover{ border-color:var(--teal); }
+  .award-btn .dot{ width:10px;height:10px;border-radius:50%; }
+  .award-btn.awarded{ background:rgba(60,122,78,0.14); border-color:var(--good); color:var(--teal-dark); }
+
+  /* ---------- end screen ---------- */
+  .end{
+    padding:44px 40px;
+    text-align:center;
+  }
+  .end h2{ font-size:2rem; margin:0 0 6px; }
+  .end p.sub{ color:var(--ink-soft); margin:0 0 26px; }
+  .podium{
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    gap:14px;
+    margin:0 auto 30px;
+    max-width:520px;
+  }
+  .podium-slot{
+    background:#fff;
+    border:1.5px solid var(--paper-line);
+    border-radius:8px 8px 0 0;
+    padding:14px 10px 12px;
+    width:130px;
+    text-align:center;
+  }
+  .podium-slot .medal{ font-size:1.4rem; margin-bottom:4px; }
+  .podium-slot .pname{ font-weight:700; font-size:0.9rem; margin-bottom:2px; word-break:break-word; }
+  .podium-slot .pscore{ font-size:0.82rem; color:var(--ink-soft); }
+  .podium-slot.first{ padding-top:22px; border-top:3px solid var(--gold); }
+  .podium-slot.second{ border-top:3px solid var(--navy); }
+  .podium-slot.third{ border-top:3px solid var(--clay); }
+
+  .solo-final-score{
+    font-size:3rem;
+    font-weight:800;
+    color:var(--teal-dark);
+    margin:6px 0 2px;
+  }
+  .end-actions{
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width:520px){
+    .answers{ grid-template-columns:1fr; }
+    .setup{ padding:32px 20px; }
+    .qcard{ padding:22px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<svg class="watermark" viewBox="0 0 480 480" aria-hidden="true">
+  <circle cx="240" cy="240" r="190" fill="none" stroke="#2b2b2b" stroke-width="3"/>
+  <circle cx="240" cy="240" r="140" fill="none" stroke="#2b2b2b" stroke-width="1.5"/>
+  <line x1="240" y1="50" x2="240" y2="430" stroke="#2b2b2b" stroke-width="2"/>
+  <line x1="50" y1="240" x2="430" y2="240" stroke="#2b2b2b" stroke-width="2"/>
+  <line x1="106" y1="106" x2="374" y2="374" stroke="#2b2b2b" stroke-width="1.5"/>
+  <line x1="374" y1="106" x2="106" y2="374" stroke="#2b2b2b" stroke-width="1.5"/>
+  <polygon points="240,90 260,240 240,220 220,240" fill="#2b2b2b"/>
+</svg>
+
+<div class="stage" id="stage"></div>
+
+<script>
+/* ============================ DATA ============================ */
+const QUESTIONS = [
+  { topic:"Spatial Terms", q:"What term describes a specific, measurable location, such as a set of coordinates?",
+    options:["Absolute location","A location described in relation to another place","A group of places that share common characteristics","A specific spot with meaning or importance"], answer:0,
+    explain:"Absolute location is an exact, measurable spot \u2014 like a set of coordinates." },
+  { topic:"Spatial Terms", q:"Which best describes \u201crelative location\u201d?",
+    options:["An exact spot given in coordinates","A location described in relation to another place","A region with shared characteristics","A place with human and physical characteristics"], answer:1,
+    explain:"Relative location describes where something is compared to another place." },
+  { topic:"Spatial Terms", q:"A region is best defined as:",
+    options:["A specific spot with meaning or importance","An exact location on a grid","A group of places that share common characteristics","A natural feature like a mountain"], answer:2,
+    explain:"A region is a group of places sharing common characteristics." },
+  { topic:"Spatial Terms", q:"Which is an example of physical geography?",
+    options:["A city's population growth","A mountain range and its climate","A country's border","A cultural tradition"], answer:1,
+    explain:"Physical geography studies Earth's natural features like mountains and climate." },
+  { topic:"Spatial Terms", q:"Which question would a human geographer most likely ask?",
+    options:["How does elevation affect this region's climate?","Why did people choose to settle in this location?","What is the average yearly rainfall?","How tall is this mountain range?"], answer:1,
+    explain:"Human geography studies people \u2014 like why they settle where they do." },
+  { topic:"Geospatial Tech", q:"Which technology uses satellites to find the exact location of a person or object on Earth?",
+    options:["GIS","Remote Sensing","GPS","Predictive Mapping"], answer:2,
+    explain:"GPS uses satellites to pinpoint exact locations." },
+  { topic:"Geospatial Tech", q:"What best describes GIS (Geographic Information System)?",
+    options:["A single satellite photo","A system that layers different types of geographic data, like a stack of maps","A tool used only by the military","A type of compass"], answer:1,
+    explain:"GIS layers different kinds of geographic data, like a stack of maps." },
+  { topic:"Geospatial Tech", q:"Remote sensing allows scientists to:",
+    options:["Physically travel to a location to collect samples","Gather data about Earth from a distance, such as from satellites","Only measure temperature","Draw maps by hand"], answer:1,
+    explain:"Remote sensing gathers data from a distance, often via satellites." },
+  { topic:"Geospatial Tech", q:"Predictive mapping is most useful for:",
+    options:["Showing exactly where things are located right now","Using past data to forecast future events, like wildfire risk","Measuring exact distances between two points","Displaying compass directions"], answer:1,
+    explain:"Predictive mapping uses past data to forecast future events." },
+  { topic:"Geospatial Tech", q:"Which career focuses on studying satellite pictures?",
+    options:["Cartographer","GIS Analyst","Remote Sensing Specialist","Drone Operator"], answer:2,
+    explain:"A Remote Sensing Specialist studies satellite imagery." },
+  { topic:"Geospatial Tech", q:"Which statement about GIS is TRUE?",
+    options:["GIS can only show one layer of information at a time","GIS can show many layers of information at once","GIS cannot be used for disaster response","GIS is the same thing as GPS"], answer:1,
+    explain:"GIS can show many layers of information at once." },
+  { topic:"Maps & Globes", q:"What is a map projection?",
+    options:["A three-dimensional model of Earth","A method for transferring Earth's curved surface onto a flat map","A tool for measuring distance","A type of compass rose"], answer:1,
+    explain:"A projection transfers Earth's curved surface onto a flat map." },
+  { topic:"Maps & Globes", q:"Why do all map projections have some distortion?",
+    options:["Mapmakers often make mistakes","It's impossible to perfectly represent a spherical surface on a flat map","Projections are an outdated technology","Distortion only happens with digital maps"], answer:1,
+    explain:"You can't perfectly flatten a sphere without some distortion." },
+  { topic:"Maps & Globes", q:"Latitude lines measure positions:",
+    options:["East and west of the Prime Meridian","North and south of the equator","Toward magnetic north","Around the International Date Line"], answer:1,
+    explain:"Latitude measures north/south position relative to the equator." },
+  { topic:"Maps & Globes", q:"Longitude lines measure positions:",
+    options:["North and south of the equator","East and west of the Prime Meridian","Around the equator only","From the North Pole to the South Pole only"], answer:1,
+    explain:"Longitude measures east/west position relative to the Prime Meridian." },
+  { topic:"Maps & Globes", q:"Which projection is best known for preserving compass directions, making it useful for navigation?",
+    options:["Robinson projection","Mercator projection","Political projection","Thematic projection"], answer:1,
+    explain:"The Mercator projection preserves compass directions." },
+  { topic:"Maps & Globes", q:"On a map, what does the legend do?",
+    options:["Shows the cardinal directions","Explains the symbols and colors used on the map","Shows the relationship between map distance and real distance","Displays the title of the map"], answer:1,
+    explain:"The legend explains what the symbols and colors mean." },
+  { topic:"Maps & Grids", q:"What is a grid on a map made of?",
+    options:["A type of symbol","A key to understanding colors","A series of lines that create squares","A picture of the Earth"], answer:2,
+    explain:"A grid is a series of lines forming squares to help locate places." },
+  { topic:"Maps & Grids", q:"What is the equator?",
+    options:["A line of longitude at 0 degrees","A line that runs around the middle of the Earth","A type of map projection","A geographical feature like a mountain"], answer:1,
+    explain:"The equator runs around the middle of the Earth." },
+  { topic:"Maps & Grids", q:"What is the Prime Meridian?",
+    options:["A line of latitude","A line of longitude at 0 degrees","A geographical feature","A type of map projection"], answer:1,
+    explain:"The Prime Meridian is the line of longitude at 0 degrees." },
+  { topic:"Diagram Skills", q:"Look at the compass rose. Which direction is the arrow pointing?",
+    options:["Northwest","Southeast","Northeast","Southwest"], answer:2,
+    explain:"The arrow points between North and East \u2014 Northeast.",
+    img:`<svg viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+      <rect width="480" height="480" fill="#ffffff"/>
+      <circle cx="240" cy="240" r="190" fill="#f4f1ea" stroke="#2b2b2b" stroke-width="3"/>
+      <circle cx="240" cy="240" r="140" fill="none" stroke="#b9b3a5" stroke-width="1.5"/>
+      <line x1="240" y1="50" x2="240" y2="430" stroke="#2b2b2b" stroke-width="2"/>
+      <line x1="50" y1="240" x2="430" y2="240" stroke="#2b2b2b" stroke-width="2"/>
+      <line x1="106" y1="106" x2="374" y2="374" stroke="#8a8478" stroke-width="1.5"/>
+      <line x1="374" y1="106" x2="106" y2="374" stroke="#8a8478" stroke-width="1.5"/>
+      <text x="240" y="42" text-anchor="middle" font-family="Arial" font-size="30" font-weight="bold" fill="#2b2b2b">N</text>
+      <text x="240" y="452" text-anchor="middle" font-family="Arial" font-size="30" font-weight="bold" fill="#2b2b2b">S</text>
+      <text x="452" y="248" text-anchor="middle" font-family="Arial" font-size="30" font-weight="bold" fill="#2b2b2b">E</text>
+      <text x="28" y="248" text-anchor="middle" font-family="Arial" font-size="30" font-weight="bold" fill="#2b2b2b">W</text>
+      <circle cx="240" cy="240" r="8" fill="#2b2b2b"/>
+      <line x1="240" y1="240" x2="345" y2="135" stroke="#b5541e" stroke-width="5"/>
+      <polygon points="345,135 322,140 340,158" fill="#b5541e"/>
+    </svg>` },
+  { topic:"Diagram Skills", q:"Look at the coordinate grid. What are the approximate coordinates of Point X?",
+    options:["20\u00b0N, 30\u00b0W","30\u00b0N, 20\u00b0W","20\u00b0S, 30\u00b0E","10\u00b0N, 40\u00b0W"], answer:0,
+    explain:"Point X sits on the 20\u00b0N line and the 30\u00b0W line.",
+    img:`<svg viewBox="0 0 560 480" xmlns="http://www.w3.org/2000/svg">
+      <rect width="560" height="480" fill="#ffffff"/>
+      <g stroke="#c9c2b2" stroke-width="1.5">
+        <line x1="100" y1="40" x2="100" y2="400"/><line x1="200" y1="40" x2="200" y2="400"/>
+        <line x1="300" y1="40" x2="300" y2="400"/><line x1="400" y1="40" x2="400" y2="400"/>
+        <line x1="500" y1="40" x2="500" y2="400"/>
+        <line x1="100" y1="40" x2="500" y2="40"/><line x1="100" y1="130" x2="500" y2="130"/>
+        <line x1="100" y1="220" x2="500" y2="220"/><line x1="100" y1="310" x2="500" y2="310"/>
+        <line x1="100" y1="400" x2="500" y2="400"/>
+      </g>
+      <rect x="100" y="40" width="400" height="360" fill="none" stroke="#2b2b2b" stroke-width="2.5"/>
+      <text x="100" y="28" text-anchor="middle" font-family="Arial" font-size="18" fill="#2b2b2b">0\u00b0</text>
+      <text x="200" y="28" text-anchor="middle" font-family="Arial" font-size="18" fill="#2b2b2b">10\u00b0W</text>
+      <text x="300" y="28" text-anchor="middle" font-family="Arial" font-size="18" fill="#2b2b2b">20\u00b0W</text>
+      <text x="400" y="28" text-anchor="middle" font-family="Arial" font-size="18" fill="#2b2b2b">30\u00b0W</text>
+      <text x="500" y="28" text-anchor="middle" font-family="Arial" font-size="18" fill="#2b2b2b">40\u00b0W</text>
+      <text x="85" y="405" text-anchor="end" font-family="Arial" font-size="18" fill="#2b2b2b">0\u00b0</text>
+      <text x="85" y="315" text-anchor="end" font-family="Arial" font-size="18" fill="#2b2b2b">10\u00b0N</text>
+      <text x="85" y="225" text-anchor="end" font-family="Arial" font-size="18" fill="#2b2b2b">20\u00b0N</text>
+      <text x="85" y="135" text-anchor="end" font-family="Arial" font-size="18" fill="#2b2b2b">30\u00b0N</text>
+      <text x="85" y="45" text-anchor="end" font-family="Arial" font-size="18" fill="#2b2b2b">40\u00b0N</text>
+      <polygon points="400,210 406,224 421,224 409,233 414,248 400,239 386,248 391,233 379,224 394,224" fill="#b5541e" stroke="#7a3712" stroke-width="1"/>
+      <text x="415" y="205" font-family="Arial" font-size="18" font-weight="bold" fill="#b5541e">Point X</text>
+    </svg>` },
+  { topic:"Diagram Skills", q:"Look at the map and legend. According to the legend, what does the triangle symbol represent?",
+    options:["City","River","Mountain","Forest"], answer:2,
+    explain:"The legend shows the triangle symbol next to \u201cMountain.\u201d",
+    img:`<svg viewBox="0 0 640 400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="640" height="400" fill="#ffffff"/>
+      <rect x="20" y="20" width="400" height="360" fill="#eef3ea" stroke="#2b2b2b" stroke-width="2.5"/>
+      <text x="220" y="45" text-anchor="middle" font-family="Arial" font-size="20" font-weight="bold" fill="#2b2b2b">Rivertown Region</text>
+      <ellipse cx="110" cy="300" rx="70" ry="50" fill="#8fb996" stroke="#4f7a58" stroke-width="1.5"/>
+      <path d="M 40 90 C 120 130, 160 90, 220 150 S 340 210, 400 260" fill="none" stroke="#5b9bd5" stroke-width="6" stroke-linecap="round"/>
+      <polygon points="300,110 340,190 260,190" fill="#a89a86" stroke="#5c4a36" stroke-width="2"/>
+      <polygon points="300,110 315,145 285,145" fill="#ffffff"/>
+      <circle cx="150" cy="150" r="10" fill="#c0392b" stroke="#7a2318" stroke-width="1.5"/>
+      <rect x="440" y="60" width="180" height="220" fill="#faf8f3" stroke="#2b2b2b" stroke-width="2"/>
+      <text x="530" y="88" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#2b2b2b">Legend</text>
+      <circle cx="465" cy="115" r="8" fill="#c0392b" stroke="#7a2318" stroke-width="1"/>
+      <text x="485" y="121" font-family="Arial" font-size="16" fill="#2b2b2b">City</text>
+      <line x1="455" y1="150" x2="478" y2="150" stroke="#5b9bd5" stroke-width="5"/>
+      <text x="485" y="156" font-family="Arial" font-size="16" fill="#2b2b2b">River</text>
+      <polygon points="466,175 478,200 454,200" fill="#a89a86" stroke="#5c4a36" stroke-width="1.5"/>
+      <text x="485" y="196" font-family="Arial" font-size="16" fill="#2b2b2b">Mountain</text>
+      <ellipse cx="466" cy="225" rx="14" ry="9" fill="#8fb996" stroke="#4f7a58" stroke-width="1.5"/>
+      <text x="485" y="231" font-family="Arial" font-size="16" fill="#2b2b2b">Forest</text>
+    </svg>` },
+  { topic:"Diagram Skills", q:"Look at the grid map. What is the grid location of the star?",
+    options:["B2","C3","D4","A5"], answer:1,
+    explain:"The star sits in column C, row 3 \u2014 grid location C3.",
+    img:`<svg viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+      <rect width="480" height="480" fill="#ffffff"/>
+      <g stroke="#2b2b2b" stroke-width="2" fill="none">
+        <rect x="80" y="80" width="350" height="350"/>
+        <line x1="150" y1="80" x2="150" y2="430"/><line x1="220" y1="80" x2="220" y2="430"/>
+        <line x1="290" y1="80" x2="290" y2="430"/><line x1="360" y1="80" x2="360" y2="430"/>
+        <line x1="80" y1="150" x2="430" y2="150"/><line x1="80" y1="220" x2="430" y2="220"/>
+        <line x1="80" y1="290" x2="430" y2="290"/><line x1="80" y1="360" x2="430" y2="360"/>
+      </g>
+      <text x="115" y="62" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">A</text>
+      <text x="185" y="62" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">B</text>
+      <text x="255" y="62" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">C</text>
+      <text x="325" y="62" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">D</text>
+      <text x="395" y="62" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">E</text>
+      <text x="60" y="122" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">1</text>
+      <text x="60" y="192" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">2</text>
+      <text x="60" y="262" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">3</text>
+      <text x="60" y="332" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">4</text>
+      <text x="60" y="402" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold" fill="#2b2b2b">5</text>
+      <polygon points="255,235 264,251 282,254 269,266 272,284 255,275 238,284 241,266 228,254 246,251" fill="#b5541e" stroke="#7a3712" stroke-width="1.5"/>
+    </svg>` }
+];
+
+const TEAM_COLORS = ["#C1622D","#1F6F6B","#B8901F","#33506B","#8C4419","#6B4E9A"];
+const DIRS = ["N","E","S","W"];
+const DIR_CLASS = ["a-n","a-e","a-s","a-w"];
+const QUESTION_TIME = 20;
+
+/* ============================ STATE ============================ */
+let state = {
+  screen: "setup",
+  mode: "solo",           // 'solo' | 'host'
+  teams: [],
+  shuffle: true,
+  order: [],
+  idx: 0,
+  revealed: false,
+  soloSelected: null,
+  soloScore: 0,
+  soloCorrectCount: 0,
+  timer: QUESTION_TIME,
+  timerHandle: null,
+  awarded: {}
+};
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+/* ============================ RENDER ============================ */
+const stage = document.getElementById("stage");
+
+function render(){
+  if(state.screen === "setup") return renderSetup();
+  if(state.screen === "play") return renderPlay();
+  if(state.screen === "end") return renderEnd();
+}
+
+function renderSetup(){
+  clearTimerIfAny();
+  stage.innerHTML = `
+    <div class="card setup">
+      <svg class="eyebrow-compass" viewBox="0 0 480 480">
+        <circle cx="240" cy="240" r="190" fill="none" stroke="#2b2b2b" stroke-width="10"/>
+        <polygon points="240,90 265,240 240,215 215,240" fill="#C1622D"/>
+        <polygon points="240,390 215,240 240,265 265,240" fill="#2b2b2b"/>
+      </svg>
+      <h1 class="display">Geography Explorer Challenge</h1>
+      <p class="sub">A review game for Geographic Tools &amp; Thinking Like a Geographer</p>
+
+      <div class="mode-toggle">
+        <button class="mode-btn ${state.mode==='solo'?'active':''}" data-mode="solo">Solo Practice</button>
+        <button class="mode-btn ${state.mode==='host'?'active':''}" data-mode="host">Class Challenge (Teams)</button>
+      </div>
+
+      ${state.mode==='host' ? renderTeamPanel() : `<p class="sub" style="max-width:420px;margin:0 auto 26px;">Answer on your own \u2014 tap a direction tile, get instant feedback, and see your score at the end.</p>`}
+
+      <div class="options-row">
+        <label class="option-check">
+          <input type="checkbox" id="shuffleBox" ${state.shuffle?'checked':''}/>
+          Shuffle question order
+        </label>
+      </div>
+
+      <button class="start-btn" id="startBtn">Start Expedition</button>
+    </div>
+  `;
+
+  document.querySelectorAll(".mode-btn").forEach(b=>{
+    b.onclick = ()=>{ state.mode = b.dataset.mode; if(state.mode==='host' && state.teams.length===0){ state.teams=[{name:"Team 1",score:0},{name:"Team 2",score:0}]; } render(); };
+  });
+  const shuffleBox = document.getElementById("shuffleBox");
+  if(shuffleBox) shuffleBox.onchange = (e)=>{ state.shuffle = e.target.checked; };
+
+  if(state.mode==='host'){
+    document.querySelectorAll(".team-row input").forEach((inp,i)=>{
+      inp.oninput = (e)=>{ state.teams[i].name = e.target.value; };
+    });
+    document.querySelectorAll(".team-row button").forEach((btn,i)=>{
+      btn.onclick = ()=>{ state.teams.splice(i,1); render(); };
+    });
+    const addBtn = document.getElementById("addTeamBtn");
+    if(addBtn) addBtn.onclick = ()=>{
+      if(state.teams.length<6){ state.teams.push({name:"Team "+(state.teams.length+1), score:0}); render(); }
+    };
+  }
+
+  document.getElementById("startBtn").onclick = startGame;
+}
+
+function renderTeamPanel(){
+  return `
+    <div class="team-panel">
+      <h3>Teams</h3>
+      ${state.teams.map((t,i)=>`
+        <div class="team-row">
+          <span class="swatch" style="background:${TEAM_COLORS[i%TEAM_COLORS.length]}"></span>
+          <input value="${t.name}" maxlength="18" placeholder="Team name"/>
+          ${state.teams.length>2 ? `<button title="Remove">\u2715</button>` : `<button style="visibility:hidden">\u2715</button>`}
+        </div>
+      `).join("")}
+      <button class="add-team" id="addTeamBtn" ${state.teams.length>=6?'disabled':''}>+ Add team</button>
+    </div>
+  `;
+}
+
+function startGame(){
+  state.order = state.shuffle ? shuffle(QUESTIONS.map((_,i)=>i)) : QUESTIONS.map((_,i)=>i);
+  state.idx = 0;
+  state.revealed = false;
+  state.soloSelected = null;
+  state.soloScore = 0;
+  state.soloCorrectCount = 0;
+  state.awarded = {};
+  if(state.mode==='host'){ state.teams.forEach(t=>t.score=0); }
+  state.screen = "play";
+  render();
+}
+
+function currentQuestion(){ return QUESTIONS[state.order[state.idx]]; }
+
+function renderPlay(){
+  const q = currentQuestion();
+  const total = state.order.length;
+  const pct = Math.round(((state.idx)/total)*100);
+
+  stage.innerHTML = `
+    <div class="topbar">
+      <div class="progress-wrap">
+        <div class="progress-label">Question ${state.idx+1} of ${total}</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      ${state.mode==='host' ? `<div class="scoreboard">${state.teams.map((t,i)=>`
+        <div class="score-chip"><span class="dot" style="background:${TEAM_COLORS[i%TEAM_COLORS.length]}"></span>${escapeHtml(t.name)}: ${t.score}</div>
+      `).join("")}</div>` : `<div class="score-chip"><span class="dot" style="background:var(--teal)"></span>Score: ${state.soloScore}</div>`}
+    </div>
+
+    <div class="card qcard">
+      <div class="qmeta">
+        <span class="topic-tag">${q.topic}</span>
+        <div class="timer-ring" id="timerRing">
+          <svg width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="18" stroke="#E4D6AE" stroke-width="5" fill="none"/>
+            <circle cx="22" cy="22" r="18" stroke="var(--clay)" stroke-width="5" fill="none"
+                    stroke-dasharray="113.1" stroke-dashoffset="0" stroke-linecap="round" id="timerArc"/>
+          </svg>
+          <div class="num" id="timerNum">${QUESTION_TIME}</div>
+        </div>
+      </div>
+      <p class="qtext display">${q.q}</p>
+      ${q.img ? `<div class="qimage">${q.img}</div>` : ""}
+
+      <div class="answers" id="answersWrap">
+        ${q.options.map((opt,i)=>`
+          <button class="answer ${DIR_CLASS[i]}" data-i="${i}">
+            <span class="badge">${DIRS[i]}</span>
+            <span>${opt}</span>
+          </button>
+        `).join("")}
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+
+      ${state.mode==='host' ? `
+        <div class="award-panel" id="awardPanel">
+          <h4>Which team${state.teams.length>1?'s':''} got it right? Tap to award +100</h4>
+          <div class="award-row">
+            ${state.teams.map((t,i)=>`
+              <button class="award-btn" data-team="${i}">
+                <span class="dot" style="background:${TEAM_COLORS[i%TEAM_COLORS.length]}"></span>${escapeHtml(t.name)}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      ` : ""}
+
+      <div class="controls-row">
+        ${state.mode==='host' ? `<button class="ghost-btn" id="revealBtn">Reveal answer</button>` : `<span></span>`}
+        <button class="primary-btn" id="nextBtn" ${state.mode==='host' && !state.revealed ? 'disabled':''}>
+          ${state.idx+1===total ? 'See results' : 'Next question'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  wirePlayEvents(q);
+  startTimer();
+}
+
+function clearTimerIfAny(){
+  if(state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle=null; }
+}
+
+function startTimer(){
+  clearTimerIfAny();
+  state.timer = QUESTION_TIME;
+  updateTimerDisplay();
+  state.timerHandle = setInterval(()=>{
+    state.timer -= 1;
+    updateTimerDisplay();
+    if(state.timer<=0){
+      clearTimerIfAny();
+      onTimeUp();
+    }
+  },1000);
+}
+
+function updateTimerDisplay(){
+  const num = document.getElementById("timerNum");
+  const arc = document.getElementById("timerArc");
+  if(!num || !arc) return;
+  num.textContent = Math.max(state.timer,0);
+  const circumference = 113.1;
+  const offset = circumference * (1 - Math.max(state.timer,0)/QUESTION_TIME);
+  arc.style.strokeDashoffset = offset;
+  arc.style.stroke = state.timer<=5 ? "var(--bad)" : "var(--clay)";
+}
+
+function onTimeUp(){
+  if(state.screen!=='play') return;
+  if(state.mode==='solo' && state.soloSelected===null){
+    const q = currentQuestion();
+    state.soloSelected = -1;
+    document.querySelectorAll("#answersWrap .answer").forEach(b=>{
+      const bi = parseInt(b.dataset.i,10);
+      b.disabled = true;
+      if(bi===q.answer) b.classList.add("correct"); else b.classList.add("dim");
+    });
+    const fb = document.getElementById("feedback");
+    fb.classList.add("show","neutral");
+    fb.innerHTML = "<b>Time's up!</b> " + q.explain;
+    document.getElementById("nextBtn").disabled = false;
+  }
+  // host mode: timer just runs out visually; the teacher still controls the reveal
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function wirePlayEvents(q){
+  const answerBtns = document.querySelectorAll("#answersWrap .answer");
+
+  if(state.mode==='solo'){
+    answerBtns.forEach(btn=>{
+      btn.onclick = ()=>{
+        if(state.soloSelected !== null) return;
+        clearTimerIfAny();
+        const i = parseInt(btn.dataset.i,10);
+        state.soloSelected = i;
+        const correct = i === q.answer;
+        if(correct){ state.soloScore += 100; state.soloCorrectCount += 1; }
+        answerBtns.forEach(b=>{
+          const bi = parseInt(b.dataset.i,10);
+          b.disabled = true;
+          if(bi === q.answer) b.classList.add("correct");
+          else if(bi === i) b.classList.add("incorrect");
+          else b.classList.add("dim");
+        });
+        const fb = document.getElementById("feedback");
+        fb.classList.add("show", correct ? "good":"neutral");
+        fb.innerHTML = (correct ? "<b>Correct!</b> " : "Not quite \u2014 ") + q.explain;
+        document.getElementById("nextBtn").disabled = false;
+      };
+    });
+    document.getElementById("nextBtn").disabled = true;
+  } else {
+    // host mode: clicking an answer just highlights it as a "guess" visually, doesn't score
+    answerBtns.forEach(btn=>{
+      btn.onclick = ()=>{
+        if(state.revealed) return;
+      };
+    });
+    document.getElementById("revealBtn").onclick = ()=>{
+      clearTimerIfAny();
+      state.revealed = true;
+      answerBtns.forEach(b=>{
+        const bi = parseInt(b.dataset.i,10);
+        if(bi === q.answer) b.classList.add("correct");
+        else b.classList.add("dim");
+      });
+      const fb = document.getElementById("feedback");
+      fb.classList.add("show","good");
+      fb.innerHTML = "<b>Answer: " + q.options[q.answer] + ".</b> " + q.explain;
+      document.getElementById("awardPanel").classList.add("show");
+      document.getElementById("nextBtn").disabled = false;
+    };
+    document.querySelectorAll(".award-btn").forEach(btn=>{
+      btn.onclick = ()=>{
+        const ti = parseInt(btn.dataset.team,10);
+        const key = state.idx+"-"+ti;
+        if(state.awarded[key]) return;
+        state.awarded[key] = true;
+        state.teams[ti].score += 100;
+        btn.classList.add("awarded");
+        btn.innerHTML = `<span class="dot" style="background:${TEAM_COLORS[ti%TEAM_COLORS.length]}"></span>${escapeHtml(state.teams[ti].name)} +100 \u2713`;
+        document.querySelector(".scoreboard").innerHTML = state.teams.map((t,i)=>`
+          <div class="score-chip"><span class="dot" style="background:${TEAM_COLORS[i%TEAM_COLORS.length]}"></span>${escapeHtml(t.name)}: ${t.score}</div>
+        `).join("");
+      };
+    });
+  }
+
+  document.getElementById("nextBtn").onclick = ()=>{
+    if(state.idx+1 >= state.order.length){
+      state.screen = "end";
+      render();
+    } else {
+      state.idx += 1;
+      state.revealed = false;
+      state.soloSelected = null;
+      render();
+    }
+  };
+}
+
+function renderEnd(){
+  clearTimerIfAny();
+  if(state.mode==='solo'){
+    const total = state.order.length;
+    const pct = Math.round((state.soloCorrectCount/total)*100);
+    stage.innerHTML = `
+      <div class="card end">
+        <p class="topic-tag" style="display:inline-block;margin-bottom:14px;">Expedition Complete</p>
+        <h2 class="display">Nice work exploring!</h2>
+        <p class="sub">You got ${state.soloCorrectCount} of ${total} correct (${pct}%)</p>
+        <div class="solo-final-score">${state.soloScore}</div>
+        <p class="sub" style="margin-top:-6px;">points</p>
+        <div class="end-actions">
+          <button class="ghost-btn" id="setupBtn">Change settings</button>
+          <button class="start-btn" id="againBtn">Play again</button>
+        </div>
+      </div>
+    `;
+  } else {
+    const ranked = state.teams.map((t,i)=>({...t, color:TEAM_COLORS[i%TEAM_COLORS.length]})).sort((a,b)=>b.score-a.score);
+    const top3 = ranked.slice(0,3);
+    const order = top3.length===3 ? [top3[1],top3[0],top3[2]] : top3;
+    stage.innerHTML = `
+      <div class="card end">
+        <p class="topic-tag" style="display:inline-block;margin-bottom:14px;">Expedition Complete</p>
+        <h2 class="display">${escapeHtml(ranked[0].name)} wins the expedition!</h2>
+        <p class="sub">Final scores below</p>
+        <div class="podium">
+          ${order.map(t=>{
+            const rank = top3.indexOf(t)+1;
+            const cls = rank===1?'first':rank===2?'second':'third';
+            const medal = rank===1?'\u{1F3C6}':rank===2?'\u{1F948}':'\u{1F949}';
+            return `<div class="podium-slot ${cls}">
+              <div class="medal">${medal}</div>
+              <div class="pname">${escapeHtml(t.name)}</div>
+              <div class="pscore">${t.score} pts</div>
+            </div>`;
+          }).join("")}
+        </div>
+        ${ranked.length>3 ? `<p class="sub">${ranked.slice(3).map(t=>escapeHtml(t.name)+': '+t.score).join(' \u00b7 ')}</p>` : ""}
+        <div class="end-actions">
+          <button class="ghost-btn" id="setupBtn">Change teams</button>
+          <button class="start-btn" id="againBtn">Play again</button>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById("setupBtn").onclick = ()=>{ state.screen="setup"; render(); };
+  document.getElementById("againBtn").onclick = startGame;
+}
+
+render();
+</script>
+</body>
+</html>
